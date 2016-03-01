@@ -26,6 +26,7 @@ Formsy.Form = React.createClass({
   getInitialState: function () {
     return {
       isValid: true,
+      isValidWithoutRequire: true,
       isSubmitting: false,
       canChange: false
     };
@@ -37,6 +38,7 @@ Formsy.Form = React.createClass({
       onSubmit: function () {},
       onValidSubmit: function () {},
       onInvalidSubmit: function () {},
+      onValidSubmitIgnoreRequired: function () {},
       onSubmitted: function () {},
       onValid: function () {},
       onInvalid: function () {},
@@ -109,8 +111,15 @@ Formsy.Form = React.createClass({
     this.setFormPristine(false);
     var model = this.getModel();
     this.props.onSubmit(model, this.resetModel, this.updateInputsWithError);
-    this.state.isValid ? this.props.onValidSubmit(model, this.resetModel, this.updateInputsWithError) : this.props.onInvalidSubmit(model, this.resetModel, this.updateInputsWithError);
-
+    if (this.state.isValid) {
+      this.props.onValidSubmit(model, this.resetModel, this.updateInputsWithError);
+    }
+    else if (this.state.isValidWithoutRequire && !this.state.isValid) {
+      this.props.onValidSubmitIgnoreRequired(model, this.resetModel, this.updateInputsWithError);
+    }
+    else {
+      this.props.onInvalidSubmit(model, this.resetModel, this.updateInputsWithError);
+    }
   },
 
   mapModel: function (model) {
@@ -236,10 +245,15 @@ Formsy.Form = React.createClass({
     component.setState({
       _isValid: validation.isValid,
       _isRequired: validation.isRequired,
+      _isValidWithoutRequire: validation.isValidWithoutRequire,
       _validationError: validation.error,
       _externalError: null
-    }, this.validateForm);
-
+    }, () => {
+      clearTimeout($.data(document.body, 'validateForm'));
+      $.data(document.body, 'validateForm', setTimeout(() => {
+          this.validateForm();
+      }, 500));
+    });
   },
 
   // Checks validation on current value or a passed value
@@ -259,11 +273,13 @@ Formsy.Form = React.createClass({
     }
 
     var isRequired = Object.keys(component._requiredValidations).length ? !!requiredResults.success.length : false;
-    var isValid = !validationResults.failed.length && !(this.props.validationErrors && this.props.validationErrors[component.props.name]);
+    var isValid = (!isRequired && (value === undefined || value === '' || value === false || value === null || (Array.isArray(value) && value.length == 0))) ||
+      !validationResults.failed.length && !(this.props.validationErrors && this.props.validationErrors[component.props.name]);
 
     return {
       isRequired: isRequired,
       isValid: isRequired ? false : isValid,
+      isValidWithoutRequire: isValid,
       error: (function () {
 
         if (isValid && !isRequired) {
@@ -359,8 +375,13 @@ Formsy.Form = React.createClass({
         return component.state._isValid;
       });
 
+    var allIsValidWithoutRequire = this.inputs.every(component => {
+        return component.state._isValidWithoutRequire;
+      });
+
       this.setState({
-        isValid: allIsValid
+        isValid: allIsValid,
+        isValidWithoutRequire: allIsValidWithoutRequire
       });
 
       if (allIsValid) {
@@ -386,6 +407,7 @@ Formsy.Form = React.createClass({
       component.setState({
         _isValid: validation.isValid,
         _isRequired: validation.isRequired,
+        _isValidWithoutRequire: validation.isValidWithoutRequire,
         _validationError: validation.error,
         _externalError: !validation.isValid && component.state._externalError ? component.state._externalError : null
       }, index === this.inputs.length - 1 ? onValidationComplete : null);
