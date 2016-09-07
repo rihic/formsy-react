@@ -38,11 +38,7 @@ Formsy.Form = React.createClass({
       onSubmit: function () {},
       onValidSubmit: function () {},
       onInvalidSubmit: function () {},
-
       onValidSubmitIgnoreRequired: function () {},
-      onSubmitted: function () {},
-
-
       onValid: function () {},
       onInvalid: function () {},
       onChange: function () {},
@@ -457,6 +453,7 @@ Formsy.Form = React.createClass({
       onValidSubmit,
       onInvalid,
       onInvalidSubmit,
+      onValidSubmitIgnoreRequired,
       onChange,
       reset,
       preventExternalInvalidation,
