@@ -12,6 +12,7 @@ var emptyArray = [];
 Formsy.Mixin = Mixin;
 Formsy.HOC = HOC;
 Formsy.Decorator = Decorator;
+Formsy.validationRules = validationRules;
 
 Formsy.defaults = function (passedOptions) {
   options = passedOptions;
@@ -109,16 +110,21 @@ Formsy.Form = React.createClass({
     // so validation becomes visible (if based on isPristine)
     this.setFormPristine(false);
     var model = this.getModel();
-    this.props.onSubmit(model, this.resetModel, this.updateInputsWithError);
-    if (this.state.isValid) {
-      this.props.onValidSubmit(model, this.resetModel, this.updateInputsWithError);
-    }
-    else if (this.state.isValidWithoutRequire && !this.state.isValid) {
-      this.props.onValidSubmitIgnoreRequired(model, this.resetModel, this.updateInputsWithError);
-    }
-    else {
-      this.props.onInvalidSubmit(model, this.resetModel, this.updateInputsWithError);
-    }
+
+    var handleSubmit = function() {
+      this.props.onSubmit(model, this.resetModel, this.updateInputsWithError);
+      if (this.state.isValid) {
+        this.props.onValidSubmit(model, this.resetModel, this.updateInputsWithError);
+      }
+      else if (this.state.isValidWithoutRequire && !this.state.isValid) {
+        this.props.onValidSubmitIgnoreRequired(model, this.resetModel, this.updateInputsWithError);
+      }
+      else {
+        this.props.onInvalidSubmit(model, this.resetModel, this.updateInputsWithError);
+      }
+    }.bind(this);
+
+    this.validateForm(handleSubmit);
   },
 
   mapModel: function (model) {
@@ -247,11 +253,6 @@ Formsy.Form = React.createClass({
       _isValidWithoutRequire: validation.isValidWithoutRequire,
       _validationError: validation.error,
       _externalError: null
-    }, () => {
-      clearTimeout($.data(document.body, 'validateForm'));
-      $.data(document.body, 'validateForm', setTimeout(() => {
-          this.validateForm();
-      }, 500));
     });
   },
 
@@ -365,7 +366,7 @@ Formsy.Form = React.createClass({
 
   // Validate the form by going through all child input components
   // and check their state
-  validateForm: function () {
+  validateForm: function (cb) {
 
     // We need a callback as we are validating all inputs again. This will
     // run when the last component has set its state
@@ -380,7 +381,11 @@ Formsy.Form = React.createClass({
 
       this.setState({
         isValid: allIsValid,
-        isValidWithoutRequire: allIsValidWithoutRequire
+        isValidWithoutRequire: allIsValidWithoutRequire,
+        // Tell the form that it can start to trigger change events
+        canChange: true
+      }, function() {
+        if (cb) cb();
       });
 
       if (allIsValid) {
@@ -388,12 +393,6 @@ Formsy.Form = React.createClass({
       } else {
         this.props.onInvalid();
       }
-
-      // Tell the form that it can start to trigger change events
-      this.setState({
-        canChange: true
-      });
-
     }.bind(this);
 
     // Run validation again in case affected by other inputs. The
