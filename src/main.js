@@ -416,6 +416,8 @@ Formsy.Form = React.createClass({
     if (!this.inputs.length && this.isMounted()) {
       this.setState({
         canChange: true
+      }, function() {
+        if (cb) cb();
       });
     }
   },
