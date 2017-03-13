@@ -598,8 +598,6 @@ var MyForm = React.createClass({
 })
 ```
 
-Sets a class name on the form itself.
-
 ### <a name="formsydecorator">Formsy.Decorator</a>
 The same methods as the mixin are exposed to the decorator version of the element component, though through the `props`, not on the instance.
 ```jsx
@@ -626,7 +624,7 @@ Formsy.addValidationRule('isFruit', function (values, value) {
 });
 ```
 ```jsx
-<MyInputComponent name="fruit" validations="'isFruit"/>
+<MyInputComponent name="fruit" validations="isFruit"/>
 ```
 Another example:
 ```jsx
@@ -658,6 +656,8 @@ Formsy.addValidationRule('isMoreThan', function (values, value, otherField) {
 }}/>
 ```
 Returns true if the value is thruthful
+
+_For more complicated regular expressions (emoji, international characters) you can use [xregexp](https://github.com/slevithan/xregexp). See [this comment](https://github.com/christianalfoni/formsy-react/issues/407#issuecomment-266306783) for an example._
 
 **isEmail**
 ```jsx
